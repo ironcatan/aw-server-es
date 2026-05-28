@@ -89,3 +89,43 @@ def test_get_events(flask_client, bucket, benchmark):
 
 
 # TODO: Add benchmark for basic AFK-filtering query
+
+
+def test_query_invalid_timeperiod(flask_client):
+    """Malformed timeperiods must yield 400 (client error), not 500.
+
+    Regression test: a non-ISO8601 timeperiod previously raised an uncaught
+    iso8601.ParseError, surfacing as an Internal Server Error.
+    """
+    r = flask_client.post(
+        "/api/0/query/",
+        json={"query": ["RETURN = 1;"], "timeperiods": ["not-a-valid-period"]},
+    )
+    assert r.status_code == 400
+    assert "not-a-valid-period" in r.json["message"]
+
+
+def test_query_timeperiod_missing_slash(flask_client):
+    """A timeperiod without a start/end slash separator must yield 400, not 500.
+
+    Regression test: a single ISO8601 datetime (no slash) previously raised an
+    uncaught IndexError when indexing the split result.
+    """
+    r = flask_client.post(
+        "/api/0/query/",
+        json={"query": ["RETURN = 1;"], "timeperiods": ["2024-01-01T00:00:00+00:00"]},
+    )
+    assert r.status_code == 400
+
+
+def test_query_valid_timeperiod(flask_client):
+    """A well-formed query with a valid timeperiod still succeeds."""
+    r = flask_client.post(
+        "/api/0/query/",
+        json={
+            "query": ["RETURN = 1;"],
+            "timeperiods": ["2024-01-01T00:00:00+00:00/2024-01-02T00:00:00+00:00"],
+        },
+    )
+    assert r.status_code == 200
+    assert r.json == [1]

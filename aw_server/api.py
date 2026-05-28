@@ -17,6 +17,7 @@ from aw_core.dirs import get_data_dir
 from aw_core.log import get_log_file_path
 from aw_core.models import Event
 from aw_query import query2
+from aw_query.exceptions import QueryException
 from aw_transform import heartbeat_merge
 
 from .__about__ import __version__
@@ -342,8 +343,16 @@ class ServerAPI:
             period = timeperiod.split("/")[
                 :2
             ]  # iso8601 timeperiods are separated by a slash
-            starttime = iso8601.parse_date(period[0])
-            endtime = iso8601.parse_date(period[1])
+            if len(period) != 2:
+                raise QueryException(
+                    f"Invalid timeperiod '{timeperiod}': expected two ISO8601 "
+                    "datetimes separated by a slash (start/end)"
+                )
+            try:
+                starttime = iso8601.parse_date(period[0])
+                endtime = iso8601.parse_date(period[1])
+            except iso8601.ParseError as e:
+                raise QueryException(f"Invalid timeperiod '{timeperiod}': {e}")
             query = "".join(query)
             result.append(query2.query(name, query, starttime, endtime, self.db))
         return result
