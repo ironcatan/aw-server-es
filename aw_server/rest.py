@@ -66,6 +66,7 @@ info = api.model(
         "version": fields.String(),
         "testing": fields.Boolean(),
         "device_id": fields.String(),
+        "profile": fields.String(),
     },
 )
 

@@ -22,6 +22,7 @@ from aw_transform import heartbeat_merge
 
 from .__about__ import __version__
 from .exceptions import NotFound
+from .profile import profile_from_env
 from .settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ class ServerAPI:
         self.db = db
         self.settings = Settings(testing)
         self.testing = testing
+        self.profile = profile_from_env(testing=testing)
         self.last_event = {}  # type: dict
 
     def get_info(self) -> Dict[str, Any]:
@@ -63,6 +65,7 @@ class ServerAPI:
             "version": __version__,
             "testing": self.testing,
             "device_id": get_device_id(),
+            "profile": self.profile,
         }
         return payload
 

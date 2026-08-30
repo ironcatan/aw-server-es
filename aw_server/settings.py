@@ -3,10 +3,15 @@ from pathlib import Path
 
 from aw_core.dirs import get_config_dir
 
+from .profile import profile_from_env, profile_suffix
+
 
 class Settings:
     def __init__(self, testing: bool):
-        filename = "settings.json" if not testing else "settings-testing.json"
+        # Dir isolation (AW_PROFILE) already separates profiles; the filename
+        # suffix is the pre-profile workaround and stays so --testing still
+        # finds settings-testing.json. Named profiles get the same shape.
+        filename = f"settings{profile_suffix(profile_from_env(testing=testing))}.json"
         self.config_file = Path(get_config_dir("aw-server")) / filename
         self.load()
 
