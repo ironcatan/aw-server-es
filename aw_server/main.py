@@ -5,7 +5,13 @@ from aw_core.log import setup_logging
 from aw_datastore import get_storage_methods
 
 from . import __version__
-from .config import config
+from .config import config_section, default_port, load_config
+from .profile import (
+    DEFAULT_PROFILE,
+    export_profile,
+    is_testing,
+    resolve_profile,
+)
 from .server import _start
 
 logger = logging.getLogger(__name__)
@@ -35,6 +41,9 @@ def main():
     if settings.testing:
         logger.info("Will run in testing mode")
 
+    if settings.profile != DEFAULT_PROFILE:
+        logger.info(f"Running with profile: {settings.profile}")
+
     if settings.custom_static:
         logger.info(f"Using custom_static: {settings.custom_static}")
 
@@ -57,7 +66,13 @@ def parse_settings():
     parser.add_argument(
         "--testing",
         action="store_true",
-        help="Run aw-server in testing mode using different ports and database",
+        help="Run aw-server in testing mode using different ports and database (alias for --profile testing)",
+    )
+    parser.add_argument(
+        "--profile",
+        dest="profile",
+        default=None,
+        help="Named instance profile (data, config, port and settings are isolated). --testing is an alias for --profile testing.",
     )
     parser.add_argument("--verbose", action="store_true", help="Be chatty.")
     parser.add_argument(
@@ -94,17 +109,42 @@ def parse_settings():
         print(__version__)
         sys.exit(0)
 
+    try:
+        profile = resolve_profile(args.profile, args.testing)
+    except ValueError as e:
+        parser.error(str(e))
+    # Export before loading config so aw-core dirs isolate this profile.
+    export_profile(profile)
+    testing = is_testing(profile)
+
     """ Parse config file """
-    configsection = "server" if not args.testing else "server-testing"
+    config = load_config()
+    section = config_section(profile)
+    if section not in config:
+        if profile not in (DEFAULT_PROFILE,):
+            logger.warning(
+                "Profile %s has no [%s] section, falling back to [server] "
+                "(port %s may collide with the default instance)",
+                profile,
+                section,
+                default_port(profile),
+            )
+        section = "server"
     settings = argparse.Namespace()
-    settings.host = config[configsection]["host"]
-    settings.port = int(config[configsection]["port"])
-    settings.storage = config[configsection]["storage"]
-    settings.cors_origins = config[configsection]["cors_origins"]
-    settings.custom_static = dict(config[configsection]["custom_static"])
+    settings.host = config[section]["host"]
+    settings.port = int(config[section]["port"])
+    settings.storage = config[section]["storage"]
+    settings.cors_origins = config[section]["cors_origins"]
+    settings.custom_static = dict(config[section]["custom_static"])
+    settings.profile = profile
+    settings.testing = testing
 
     """ If a argument is not none, override the config value """
     for key, value in vars(args).items():
+        if key in ("testing", "profile"):
+            # Resolved above; --profile testing must keep testing=True
+            # even when the raw --testing flag was absent.
+            continue
         if value is not None:
             if key == "custom_static":
                 settings.custom_static = parse_str_to_dict(value)

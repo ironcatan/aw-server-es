@@ -1,4 +1,5 @@
 import logging
+import os
 
 import pytest
 from aw_client import ActivityWatchClient
@@ -7,9 +8,24 @@ from aw_server.server import AWFlask
 logging.basicConfig(level=logging.WARN)
 
 
+@pytest.fixture(autouse=True)
+def _clear_aw_profile_after_test():
+    """export_profile() writes os.environ directly; monkeypatch.delenv does
+    not record an undo when the var was already unset, so later tests would
+    inherit a leftover profile."""
+    yield
+    os.environ.pop("AW_PROFILE", None)
+
+
 @pytest.fixture(scope="session")
 def app():
-    return AWFlask("127.0.0.1", testing=True)
+    # AWFlask does not go through parse_settings(), so a leftover AW_PROFILE
+    # from the environment (or a prior test) would disagree with testing=True.
+    old = os.environ.pop("AW_PROFILE", None)
+    application = AWFlask("127.0.0.1", testing=True)
+    if old is not None:
+        os.environ["AW_PROFILE"] = old
+    return application
 
 
 @pytest.fixture(scope="session")
