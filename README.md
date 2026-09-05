@@ -1,5 +1,11 @@
-aw-server
+aw-server (Chronly fork)
 ============
+
+**This is Chronly, a private fork of ActivityWatch's `aw-server`, maintained
+by Manuel Arroyo Algar. Not affiliated with or endorsed by the ActivityWatch
+project.** Licensed under MPLv2, same as upstream. Adds `/0/purge` (bulk-delete
+events before a date) and `/0/storage_size` (on-disk DB size) endpoints on top
+of the original API.
 
 [![Build Status](https://github.com/ActivityWatch/aw-server/workflows/Build/badge.svg?branch=master)](https://github.com/ActivityWatch/aw-server/actions?query=workflow%3ABuild+branch%3Amaster)
 [![Coverage Status](https://codecov.io/gh/ActivityWatch/aw-server/branch/master/graph/badge.svg)](https://codecov.io/gh/ActivityWatch/aw-server)
