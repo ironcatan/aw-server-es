@@ -209,6 +209,10 @@ class ServerAPI:
         logger.info(f"Purged events before {end.isoformat()}: {deleted_per_bucket}")
         return deleted_per_bucket
 
+    def get_storage_size(self) -> Dict[str, Any]:
+        """Returns the on-disk size (in bytes) of the storage backend."""
+        return {"size": self.db.get_storage_size()}
+
     @check_bucket_exists
     def get_event(
         self,

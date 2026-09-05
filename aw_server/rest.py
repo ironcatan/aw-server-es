@@ -405,6 +405,13 @@ class PurgeResource(Resource):
         return deleted_per_bucket, 200
 
 
+@api.route("/0/storage_size")
+class StorageSizeResource(Resource):
+    @copy_doc(ServerAPI.get_storage_size)
+    def get(self):
+        return current_app.api.get_storage_size(), 200
+
+
 # LOGGING
 
 
