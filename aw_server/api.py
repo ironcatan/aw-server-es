@@ -201,6 +201,14 @@ class ServerAPI:
         logger.debug(f"Deleted bucket '{bucket_id}'")
         return None
 
+    def purge_events_before(self, end: datetime) -> Dict[str, int]:
+        """Delete all events older than `end` across every bucket. Returns the number of deleted events per bucket."""
+        deleted_per_bucket = {}
+        for bucket_id in self.db.buckets():
+            deleted_per_bucket[bucket_id] = self.db[bucket_id].delete_events_before(end)
+        logger.info(f"Purged events before {end.isoformat()}: {deleted_per_bucket}")
+        return deleted_per_bucket
+
     @check_bucket_exists
     def get_event(
         self,

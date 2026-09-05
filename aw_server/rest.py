@@ -385,6 +385,26 @@ class ImportAllResource(Resource):
         return None, 200
 
 
+@api.route("/0/purge")
+class PurgeResource(Resource):
+    @api.expect(
+        api.schema_model(
+            "Purge",
+            {
+                "type": "object",
+                "properties": {"end": {"type": "string", "format": "date-time"}},
+                "required": ["end"],
+            },
+        )
+    )
+    @copy_doc(ServerAPI.purge_events_before)
+    def post(self):
+        data = request.get_json()
+        end = iso8601.parse_date(data["end"])
+        deleted_per_bucket = current_app.api.purge_events_before(end)
+        return deleted_per_bucket, 200
+
+
 # LOGGING
 
 
